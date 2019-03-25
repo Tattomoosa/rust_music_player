@@ -1,0 +1,9 @@
+[package]
+name = "guessing_game"
+version = "0.1.0"
+authors = ["Matt O'Tousa <matt@mattotousa.com>"]
+edition = "2018"
+
+[dependencies]
+rodio = "*"
+sciter-rs = "*"

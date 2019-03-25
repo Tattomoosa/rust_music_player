@@ -1,0 +1,27 @@
+<html>
+  <head>
+    <title>MUSIC TEST</title>
+    <script type="text/tiscript">
+      view.caption = $(head > title).value;
+      $(#song-title).text = Sciter.machineName();
+
+      $(#play-button).on("click", : {
+        $(#song-title).postEvent(Event.CHANGE, 0, this, "hello?");
+      });
+
+      $(#pause-button).on("click", : {
+        $(#song-title).postEvent(Event.CHANGE, 0, this, "goodbye!");
+      });
+
+      $(#song-title).on("change", function(e) {
+        this.text = String.printf("Event from `%s`:: %v\n", e.source.id, e.data);
+      });
+    </script>
+  </head>
+  <body>
+    <p>Running on <em #machine/> machine</p>
+    <p id="song-title">SONG TITLE</p>
+    <input type="button" value="Play" id="play-button" />
+    <input type="button" value="Pause" id="pause-button" />
+  </body>
+</html>
