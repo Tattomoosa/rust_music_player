@@ -188,14 +188,6 @@ version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "guessing_game"
-version = "0.1.0"
-dependencies = [
- "rodio 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "sciter-rs 0.5.45 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "hound"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -299,6 +291,14 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cc 1.0.30 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "music_player"
+version = "0.1.0"
+dependencies = [
+ "rodio 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sciter-rs 0.5.45 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

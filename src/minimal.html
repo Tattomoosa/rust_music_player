@@ -2,26 +2,41 @@
   <head>
     <title>MUSIC TEST</title>
     <script type="text/tiscript">
-      view.caption = $(head > title).value;
-      $(#song-title).text = Sciter.machineName();
+view.caption = $(head > title).value;
+$(#last-event).text = Sciter.machineName();
 
-      $(#play-button).on("click", : {
-        $(#song-title).postEvent(Event.CHANGE, 0, this, "hello?");
-      });
+$(#play-button).on("click", : {
+  $(#last-event).postEvent(Event.CHANGE, 0, this, this.value);
+});
 
-      $(#pause-button).on("click", : {
-        $(#song-title).postEvent(Event.CHANGE, 0, this, "goodbye!");
-      });
+$(#pause-button).on("click", : {
+  $(#last-event).postEvent(Event.CHANGE, 0, this, this.value);
+});
 
-      $(#song-title).on("change", function(e) {
-        this.text = String.printf("Event from `%s`:: %v\n", e.source.id, e.data);
-      });
+$(#user-input).on("change", : {
+  $(#last-event).postEvent(Event.CHANGE, 0, this, this.value);
+  $(#matches).postEvent(Event.CHANGE, 0, this, this.value);
+});
+
+// change events triggered by other events
+$(#last-event).on("change", function(e) {
+  this.text = String.printf("Event from `%s`:: %v\n", e.source.id, e.data);
+});
+
+$(#matches).on("change", function(e) {
+  this.text = e.data;
+});
+
     </script>
   </head>
   <body>
     <p>Running on <em #machine/> machine</p>
-    <p id="song-title">SONG TITLE</p>
+    <p id="last-event">SONG TITLE</p>
+    <input type="text" value="" id="user-input" />
+    <input type="button" value="Load" id="load-button" />
     <input type="button" value="Play" id="play-button" />
     <input type="button" value="Pause" id="pause-button" />
+    <ul id="matches">
+    </ul>
   </body>
 </html>
