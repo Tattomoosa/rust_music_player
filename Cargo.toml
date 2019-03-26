@@ -7,3 +7,5 @@ edition = "2018"
 [dependencies]
 rodio = "*"
 sciter-rs = "*"
+walkdir = "2"
+sublime_fuzzy = "*"
