@@ -2,6 +2,7 @@
   <head>
     <title>MUSIC TEST</title>
     <script type="text/tiscript">
+      /*
 view.caption = $(head > title).value;
 $(#last-event).text = Sciter.machineName();
 
@@ -26,6 +27,15 @@ $(#last-event).on("change", function(e) {
 $(#matches).on("change", function(e) {
   this.text = e.data;
 });
+*/
+/*
+$(#user-input).on("keyup", function(e) {
+  $(#load-button).postEvent(Event.CLICK, 0, this, this.value);
+});
+*/
+$(#user-input).onKey(e) {
+  console.log(e);
+}
 
     </script>
   </head>

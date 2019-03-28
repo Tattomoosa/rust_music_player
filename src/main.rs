@@ -22,8 +22,10 @@ struct Song {
 struct Player {
     device: rodio::Device,
     sink: Sink,
-    current_song_index: i64,
-    library: Vec<Song>
+    current_song_index: usize,
+    library: Vec<Song>,
+    ui_ready: bool,
+    top_match_index: usize
 }
 
 impl Player {
@@ -33,10 +35,21 @@ impl Player {
         Player {
             sink,
             device,
-            current_song_index: -1,
-            library: Vec::new()
+            current_song_index: 0,
+            library: Vec::new(),
+            ui_ready: false,
+            top_match_index: 0
         }
     }
+
+/*
+    pub fn load_top_match(&mut self) -> bool {
+        // let index: usize = self.top_match_index;
+        self.load_song(
+            self.library.get(&self.top_match_index).unwrap()
+            )
+    }
+    */
 
     // Sink::stop() seems to stop the sink forever for some reason.
     // So to stop a playing sound we have to destroy the sink and
@@ -48,7 +61,7 @@ impl Player {
     }
 
     // TODO return proper error
-    pub fn load_song(&mut self, song: Song) -> bool {
+    pub fn load_song(&mut self, song: &Song) -> bool {
         match File::open(&song.path) {
             Ok(file) =>
                 match rodio::Decoder::new(BufReader::new(file)) {
@@ -100,89 +113,110 @@ fn main() {
 }
 
 impl sciter::EventHandler for Player{
+
     fn on_event(&mut self, root: HELEMENT, source: HELEMENT,
                 target: HELEMENT, code: BEHAVIOR_EVENTS,
                 phase: PHASE_MASK, reason: EventReason) -> bool {
-
         if phase != PHASE_MASK::SINKING { return false; }
+        if code == BEHAVIOR_EVENTS::DOCUMENT_READY {
+            self.ui_ready = true;
+        }
+        if !self.ui_ready {
+            return false;
+        }
 
         let root = Element::from(root).root();
         let source = Element::from(source);
-
-        println!("\nEVENT: {:?} ({})", code, source);
-
-        if code == BEHAVIOR_EVENTS::BUTTON_CLICK {
-            // let root = Element::from(root).root();
-            let last_event_element = root.find_first("#last-event").unwrap()
-                          .expect("div#last-event not found!");
-            let user_input = root.find_first("#user-input").unwrap()
-                            .expect("div#user-input not found!");
-
-            if let Some(id) = source.get_attribute("id") {
-                match id.as_str() {
-                    "load-button" => {
-                        self.load_song(Song { path: user_input.get_text() });
-                        return true;
-                    },
-                    "play-button" => {
-                        self.play();
-                        return true;
-                    },
-                    "pause-button" => {
-                        self.pause();
-                        return true;
-                    }
-                    _ => panic!("BUTTON_CLICK_FAILURE: ID '{}' not recognized!", id),
-                }
-            }
+        let mut last_event_element = root.find_first("#last-event").unwrap()
+                        .expect("div#last-event not found!");
+        let id = source.get_attribute("id").unwrap_or_else(|| "_".to_string());
+        if id != "last-event" {
+            let result = last_event_element.set_text(format!("\nEVENT: {:?} ({})", code, source).as_str());
         }
-
-        if code == BEHAVIOR_EVENTS::EDIT_VALUE_CHANGED {
-            if let Some(id) = source.get_attribute("id") {
-                match id.as_str() {
-                    "user-input" => {
-                        println!("MATCHES...");
-                        let mut matches_el = root.find_first("#matches").unwrap()
-                            .expect("div#matches element not found");
-                        let user_input = root.find_first("#user-input").unwrap()
-                            .expect("div#user-input not found!");
-                        // for some reason this will take a br raw string
-                        // but not " " (?) TODO find out why.
-                        let result = matches_el.set_html(br#" "#, None).unwrap();
-                        // let mut search = FuzzySearch::new(self.library, );
-                        // let mut search = best_match(self.library, source.value);
-                        // println!("{:?}", search);
-                        let mut song_paths = String::new();
-                        // TODO do when generating library
-                        for song in &self.library {
-                            song_paths.push_str(song.path.as_str());
-                            song_paths.push_str("<br/>");
-                        }
-                        let search = best_match(user_input.get_text().as_str(), song_paths.as_str());
-                        match search {
-                            Some(search) => {
-                                // println!("MATCHES: {}",
-                                //    format_simple(&search, &song_paths, "<i>", "</i>")),
-                                // matches_el.set_text(format_simple(&search, &song_paths, "<i>", "</i>").as_str()).unwrap();
-                                matches_el.set_html(
-                                    format_simple(
-                                        &search,
-                                        &song_paths,
-                                        "<span style=\"color:red\">",
-                                        "</span>").as_str().as_bytes(),
-                                        None
-                                        ).unwrap();
-                                ()
-                            }
-                            None => return false,
-                        }
-                        // matches_el.set_text(search.matches().to_string().as_str());
-                    }
-                    _ => ()
-                }
-            }
+        match code {
+            BEHAVIOR_EVENTS::BUTTON_CLICK => return on_click(self, root, source),
+            BEHAVIOR_EVENTS::EDIT_VALUE_CHANGED => return on_input(self, root, source),
+            _ => (),
         }
 
         false
     }
+}
+
+fn on_input(player: &mut Player, root: Element, source: Element) -> bool {
+    if let Some(id) = source.get_attribute("id") {
+        match id.as_str() {
+            "user-input" => {
+                let mut matches_el = root.find_first("#matches").unwrap()
+                    .expect("div#matches element not found");
+                let user_input = root.find_first("#user-input").unwrap()
+                    .expect("div#user-input not found!");
+                // for some reason this will take a br raw string
+                // but not " " (?) TODO find out why.
+                let result = matches_el.set_html(br#" "#, None).unwrap();
+                let mut i = 0;
+                let mut top_score = 0;
+                let mut top_index = 0;
+                for song in &player.library {
+                    let search_box = best_match(user_input.get_text().as_str(), song.path.as_str());
+                    match search_box {
+                        Some(search) => {
+                        if search.score() >= top_score {
+                            top_score = search.score();
+                            top_index = i;
+                        }
+                        let formatted_match = format_simple(&search, &song.path, "<span style=\"color:red\">", "</span>");
+                        let mut el = Element::create("li").unwrap();
+                        let result = matches_el.append(&el);
+                        let result = el.set_html(formatted_match.as_str().as_bytes(), None);
+                        let result = el.append(&Element::with_text("span", format!(" [score: {}]", search.score()).as_str()).unwrap());
+                        let result = el.append(&Element::with_text("span", format!(" [index: {}]", i).as_str()).unwrap());
+                        let result = matches_el.append(&Element::create("br").unwrap());
+                        }
+                        None => {
+                            let mut el = Element::create("li").unwrap();
+                            let result = el.set_text(song.path.as_str());
+                        },
+                    }
+                    i += 1;
+                }
+                player.top_match_index = top_index;
+                println!("Top Match Score: {}", top_score);
+                println!("Top Match Index: {}", player.top_match_index);
+                return true;
+            }
+            _ => return false
+        }
+    }
+    false
+}
+
+fn on_click(player: &mut Player, root: Element, source: Element) -> bool {
+    // let root = Element::from(root).root();
+    let user_input = root.find_first("#user-input").unwrap()
+                    .expect("div#user-input not found!");
+
+    if let Some(id) = source.get_attribute("id") {
+        match id.as_str() {
+            "load-button" => {
+                // player.load_song(Song { path: user_input.get_text() });
+                // player.load_song(player.library[player.top_match_index]);
+                // player.load_top_match();
+                println!("match index: {}", player.top_match_index);
+                println!("TOP MATCH: {}", player.library[player.top_match_index].path.to_string());
+                player.load_song(&Song { path: player.library[player.top_match_index].path.to_string() });
+                return true;
+            },
+            "play-button" => {
+                player.play();
+                return true;
+            },
+            "pause-button" => {
+                player.pause();
+                return true;
+            }
+            _ => return false,
+        }
+    }
+    false
 }
