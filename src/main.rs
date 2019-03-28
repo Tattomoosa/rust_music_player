@@ -42,14 +42,12 @@ impl Player {
         }
     }
 
-/*
-    pub fn load_top_match(&mut self) -> bool {
-        // let index: usize = self.top_match_index;
-        self.load_song(
-            self.library.get(&self.top_match_index).unwrap()
-            )
+    pub fn load_top_match(&mut self) {
+        // Ok song probably needs a copy constructor?
+        self.load_song(&Song { path: self.library[self.top_match_index].path.to_string() });
+        // Can i make something like this work??
+        // self.load_song(self.library[self.top_match_index]);
     }
-    */
 
     // Sink::stop() seems to stop the sink forever for some reason.
     // So to stop a playing sound we have to destroy the sink and
@@ -199,12 +197,7 @@ fn on_click(player: &mut Player, root: Element, source: Element) -> bool {
     if let Some(id) = source.get_attribute("id") {
         match id.as_str() {
             "load-button" => {
-                // player.load_song(Song { path: user_input.get_text() });
-                // player.load_song(player.library[player.top_match_index]);
-                // player.load_top_match();
-                println!("match index: {}", player.top_match_index);
-                println!("TOP MATCH: {}", player.library[player.top_match_index].path.to_string());
-                player.load_song(&Song { path: player.library[player.top_match_index].path.to_string() });
+                player.load_top_match();
                 return true;
             },
             "play-button" => {
