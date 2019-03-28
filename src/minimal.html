@@ -15,7 +15,7 @@ $(#pause-button).on("click", : {
 
 $(#user-input).on("change", : {
   $(#last-event).postEvent(Event.CHANGE, 0, this, this.value);
-  $(#matches).postEvent(Event.CHANGE, 0, this, this.value);
+  // $(#matches).postEvent(Event.CHANGE, 0, this, this.value);
 });
 
 // change events triggered by other events

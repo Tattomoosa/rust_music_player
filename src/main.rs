@@ -13,7 +13,7 @@ use self::sciter::dom::HELEMENT;
 use std::io::BufReader;
 use rodio::Sink;
 use walkdir::WalkDir;
-use sublime_fuzzy::best_match;
+use sublime_fuzzy::{best_match, format_simple};
 
 struct Song {
     path: String,
@@ -115,13 +115,13 @@ impl sciter::EventHandler for Player{
             // let root = Element::from(root).root();
             let last_event_element = root.find_first("#last-event").unwrap()
                           .expect("div#last-event not found!");
-            let song_path = root.find_first("#user-input").unwrap()
-                          .expect("div#user-input not found!");
+            let user_input = root.find_first("#user-input").unwrap()
+                            .expect("div#user-input not found!");
 
             if let Some(id) = source.get_attribute("id") {
                 match id.as_str() {
                     "load-button" => {
-                        self.load_song(Song { path: song_path.get_text() });
+                        self.load_song(Song { path: user_input.get_text() });
                         return true;
                     },
                     "play-button" => {
@@ -132,13 +132,55 @@ impl sciter::EventHandler for Player{
                         self.pause();
                         return true;
                     }
-                    _ => panic!("ID '{}' not recognized!", id),
+                    _ => panic!("BUTTON_CLICK_FAILURE: ID '{}' not recognized!", id),
                 }
             }
         }
 
-        if code == BEHAVIOR_EVENTS::CONTENT_CHANGED {
-
+        if code == BEHAVIOR_EVENTS::EDIT_VALUE_CHANGED {
+            if let Some(id) = source.get_attribute("id") {
+                match id.as_str() {
+                    "user-input" => {
+                        println!("MATCHES...");
+                        let mut matches_el = root.find_first("#matches").unwrap()
+                            .expect("div#matches element not found");
+                        let user_input = root.find_first("#user-input").unwrap()
+                            .expect("div#user-input not found!");
+                        // for some reason this will take a br raw string
+                        // but not " " (?) TODO find out why.
+                        let result = matches_el.set_html(br#" "#, None).unwrap();
+                        // let mut search = FuzzySearch::new(self.library, );
+                        // let mut search = best_match(self.library, source.value);
+                        // println!("{:?}", search);
+                        let mut song_paths = String::new();
+                        // TODO do when generating library
+                        for song in &self.library {
+                            song_paths.push_str(song.path.as_str());
+                            song_paths.push_str("<br/>");
+                        }
+                        let search = best_match(user_input.get_text().as_str(), song_paths.as_str());
+                        match search {
+                            Some(search) => {
+                                // println!("MATCHES: {}",
+                                //    format_simple(&search, &song_paths, "<i>", "</i>")),
+                                // matches_el.set_text(format_simple(&search, &song_paths, "<i>", "</i>").as_str()).unwrap();
+                                matches_el.set_html(
+                                    format_simple(
+                                        &search,
+                                        &song_paths,
+                                        "<span style=\"color:red\">",
+                                        "</span>").as_str().as_bytes(),
+                                        None
+                                        ).unwrap();
+                                ()
+                            }
+                            None => return false,
+                        }
+                        // matches_el.set_text(search.matches().to_string().as_str());
+                    }
+                    _ => ()
+                }
+            }
         }
 
         false
