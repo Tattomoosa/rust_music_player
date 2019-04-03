@@ -33,15 +33,34 @@ $(#user-input).on("keyup", function(e) {
   $(#load-button).postEvent(Event.CLICK, 0, this, this.value);
 });
 */
-$(#user-input).onKey(e) {
-  console.log(e);
+
+$(#user-input).onKey = function (e) {
+  if (e.type == (Event.KEY_DOWN | Event.SINKING))
+  {
+    // ENTER
+    if (e.keyCode == 36) {
+      $(#load-button).postEvent(Event.BUTTON_CLICK);
+    }
+  }
 }
+
+/*
+$(#user-input).on("keyup", function(e) {
+    $(#debug).postEvent(Event.CHANGE, 0, this, e.keyCode);
+});
+*/
+
+$(#debug).on("change", function(e) {
+  this.text = String.printf("Event from `%s`:: %v\n", e.source.id, e.data);
+});
 
     </script>
   </head>
   <body>
     <p>Running on <em #machine/> machine</p>
     <p id="last-event">SONG TITLE</p>
+    <p id="debug">SONG TITLE</p>
+    <p id="song-name"></p>
     <input type="text" value="" id="user-input" />
     <input type="button" value="Load" id="load-button" />
     <input type="button" value="Play" id="play-button" />
